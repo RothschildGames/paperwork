@@ -1,19 +1,21 @@
 class App.Views.Page
+  signature_count: 2
   color: 0xF5F3E3
   page_height_ratio: 14/8.5
   page_margin: 50
   page_padding: 20
-  signature_height: 30
-  signature_width: 120
-  signature_line_height: 3
 
-  constructor: (@game, @x, @y) ->
+  constructor: (@game, @x, @y, @options = {signatures: @signature_count}) ->
     @page = @game.add.graphics(@x, @y);
-    @page.beginFill(@color, 1);
+
     @paper_width = @game.width - (@page_margin * 2)
     @page_height = @paper_width * @page_height_ratio
+
+    @page.beginFill(0, 0.3);
+    @page.drawRect(@page_margin + 10, @page_margin + 10, @paper_width , @page_height)
+
+    @page.beginFill(@color, 1);
     @page.drawRect(@page_margin, @page_margin, @paper_width, @page_height)
-    @page.endFill()
 
     @text = @game.add.text(@page_margin + @page_padding, @page_margin + @page_padding, Legal.generate(2))
     @text.wordWrapWidth = @paper_width - (@page_padding * 2)
@@ -22,36 +24,22 @@ class App.Views.Page
     @text.fontSize = 23
     @text.fontWeight = 200
     @text.fill = '#333333'
+    @text.cacheAsBitmap = true
     @page.addChild(@text)
 
-
-    _.times(game.rnd.between(1, 3), =>
-      @createSignature()
-    )
-
-
-
+    if @options.signatures > 0
+      @sigs = []
+      _.times(game.rnd.between(1, @signature_count), =>
+        @sigs.push @createSignature()
+      )
 
   createSignature: =>
-    x = game.rnd.between(@text.left, @text.right - @signature_width)
-    y = game.rnd.between(@text.top, @page_height - @signature_height)
-    signatureThingie = @game.add.graphics(x, y)
-    signatureThingie.beginFill(@color, 1);
-    signatureThingie.drawRect(0, 0, @signature_width, @signature_height)
-    signatureThingie.endFill()
+    x = game.rnd.between(@text.left, @text.right - App.Views.Signature.signature_width - App.Views.Signature.signature_padding)
+    y = game.rnd.between(@text.top, @page_height - App.Views.Signature.signature_height - App.Views.Signature.signature_padding)
+    signature = new App.Views.Signature(game, x, y, @color)
+    @page.addChild(signature.el)
+    signature
 
-    signatureThingie.beginFill(0x333333, 1);
-    signatureThingie.drawRect(5, @signature_height - 5, @signature_width - 10, @signature_line_height)
-    signatureThingie.inputEnabled = true
-    signatureThingie.events.onInputDown.add ->
-      console.log("START")
-    signatureThingie.events.onInputUp.add ->
-      console.log("STOP")
-    @page.addChild(signatureThingie)
-
-    xText = @game.add.text(x + 5, y + 2, "X")
-    xText.font = 'Courier'
-    xText.fontSize = 23
-    xText.fontWeight = 400
-    xText.fill = '#333333'
-    @page.addChild(xText)
+  update: =>
+    for sig in @sigs
+      sig.update()

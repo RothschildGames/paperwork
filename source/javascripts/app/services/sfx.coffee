@@ -1,16 +1,9 @@
 class App.Sfx
 
-  music: ['sfx/RinbackTone.ogg', 'sfx/RinbackTone.mp3', 'sfx/RinbackTone.m4a']
+  music: ['sfx/ScruffHouse.ogg', 'sfx/ScruffHouse.mp3', 'sfx/ScruffHouse.m4a']
 
   soundsSources:
-    killMonster: ['coin-01', 'coin-02', 'coin-03', 'coin-04']
-    damageMonster: ['monster-hit-1', 'monster-hit-2', 'monster-hit-3']
-    loseHealth: ['lose-1', 'lose-2', 'lose-3']
-    install: ['install-01', 'install-02', 'install-03']
-    Splashy: ['splashy']
-    Shooty: ['shooty']
-    Slowey: ['slowy']
-    Snipey: ['snipey']
+    signature: ['sig1', 'sig2', 'sig3', 'sig4', 'sig5', 'sig6', 'sig7']
   sounds: {}
 
   constructor: (@game) ->
@@ -25,16 +18,10 @@ class App.Sfx
 
     game.load.audio('bgmusic', @music)
 
-    AppAtk.on('monster-hit', (monster) => @play('damageMonster') )
-    AppAtk.on('monster-killed', (monster) => @play('killMonster') )
-    AppAtk.on('lost-life', => @play('loseHealth') )
-    AppAtk.on('installed-tower', => @play('install') )
-    AppAtk.on('tower-fired', (tower) => @play(tower.get('name')) )
-
   start: ->
     @game.add.audio('bgmusic', 0.25, true).play() unless @playingMusic
     @playingMusic = true
 
   play: (key) ->
     soundKey = _.sample(@sounds[key])
-    @game.add.audio(soundKey).play()
+    @game.add.audio(soundKey, 6).play()

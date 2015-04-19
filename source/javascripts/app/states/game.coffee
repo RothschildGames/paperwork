@@ -1,6 +1,7 @@
 class App.Game
 
-  CAMERA_SPEED = 3
+  camera_speed: 3
+  NUMBER_OF_PAGES = 20
 
   create_page = ->
     page = game.add.graphics(0, 0);
@@ -12,16 +13,18 @@ class App.Game
 
 
   create: ->
+    App.sfx.start()
     ga('send', 'event', 'game', 'start');
-    game.world.setBounds(0, 0, game.width * 10, game.height);
 
-    page1 = new App.Views.Page(game, game.width, 0)
-    page1 = new App.Views.Page(game, game.width * 2, 0)
-#    page1 = create_page()
-#    page2 = create_page()
-#    page2.x = game.width - margin
-#    bg = game.add.sprite(0, 0, 'background')
-    game.backgroundColor = 0xF0F
+    game.world.setBounds(0, 0, game.width * NUMBER_OF_PAGES, game.height);
+
+    @pages = []
+    _.times NUMBER_OF_PAGES, (idx) =>
+      @pages.push new App.Views.Page(game, game.width * (idx+1), 0)
+
+    game.stage.backgroundColor = 0xDDDDDD
 
   update: ->
-    game.camera.x += CAMERA_SPEED;
+    for page in @pages
+      page.update()
+    game.camera.x += @camera_speed;

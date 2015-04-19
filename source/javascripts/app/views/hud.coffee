@@ -29,7 +29,7 @@ class App.Views.HUD
     @healthText.fontWeight = 200
     @healthText.fill = '#FFFFFF'
 
-    battery = @game.add.sprite(738, 17, 'battery')
+    battery = @game.add.el(738, 17, 'battery')
     battery.anchor.setTo(1, 0)
 
     @batteryFill = @game.add.graphics(691, 19)

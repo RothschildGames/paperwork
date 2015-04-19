@@ -4,7 +4,8 @@ class App.Boot
     @scale.scaleMode = Phaser.ScaleManager.EXACT_FIT
 
   preload: ->
-    # @load.image('loading-background', 'images/loading-background.png')
+    @load.image('sig1', 'images/sig1.png')
+    @load.image('sig2', 'images/sig2.png')
 
   create: ->
-    @state.start('game')
+    @state.start('loader')

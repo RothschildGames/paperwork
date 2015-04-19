@@ -6,48 +6,66 @@ class App.Loader
     @_loadGameAssets()
 
   _createLoadingUI: ->
-    bg = @add.sprite(0, 0, 'loading-background')
+    game.stage.backgroundColor = 0xDDDDDD
+    page = new App.Views.Page(game, 0, 0, {signatures: 0})
+    page.text.visible = false
 
-    text = @add.text(@world.centerX, 207, '0%')
-    text.anchor.setTo(0.5, 0.5)
+
+    text = game.add.text(180, 240, 'Paper\nWork')
     text.align = 'center'
-    text.font = 'Helvetica Neue'
-    text.fontSize = 175
-    text.fontWeight = 100
-    text.fill = '#FFFFFF'
+    text.wordWrapWidth = 3000
+    text.wordWrap = true
+    text.font = 'Courier'
+    text.fontSize = 120
+    text.fontWeight = 800
+    text.fill = '#333333'
 
-    slideText = @add.text(@world.centerX, 1170, '> click to start')
-    slideText.anchor.setTo(0.5, 0.5)
-    slideText.alpha = 0
-    slideText.font = 'Helvetica Neue'
-    slideText.fontSize = 48
-    slideText.fontWeight = 200
-    slideText.fill = '#FFFFFF'
+    text = game.add.text(220, 540, 'by @yonbergman')
+    text.align = 'center'
+    text.font = 'Courier'
+    text.fontSize = 33
+    text.fontWeight = 200
+    text.fill = '#333333'
 
-    bg.inputEnabled = true
-    bg.events.onInputDown.add @startGame
 
-    @load.onFileComplete.add =>
-      text.text = "#{@load.progress}%"
+    text = game.add.text(220, 740, 'Loading...')
+    text.align = 'center'
+    text.font = 'Courier'
+    text.fontSize = 33
+    text.fontWeight = 200
+    text.fill = '#333333'
+    @loadingText = text
+
+    text = game.add.text(180, 740, 'Sign here to start:')
+    text.align = 'center'
+    text.font = 'Courier'
+    text.fontSize = 33
+    text.fontWeight = 200
+    text.fill = '#333333'
+    text.visible = false
+    @signToStart = text
+
+    @signature = new App.Views.Signature(game, 400, 800, page.color)
+    @signature.el.visible = false
+    @signature.on "signed", =>
+      started = @startGame()
+
+    page.page.inputEnabled = true
+    page.page.events.onInputDown.add @startGame
 
     @load.onLoadComplete.add =>
-      @add.tween(slideText).to({alpha: 0.8}, 200).start()
+      App.sfx.start()
+      @loadingText.visible = false
+      @signToStart.visible = true
+      @signature.el.visible = true
       @ready = true
 
   startGame: =>
-    @state.start('help') if @ready
+    @state.start('game') if @ready
 
   _loadGameAssets: ->
-    @load.image('background', 'images/bg.png')
-    @load.image('help', 'images/help.png')
-    @load.image('death-particle', 'images/death-particle.png')
-    @load.spritesheet('monster0', 'images/monster0.png', 42, 33)
-    @load.spritesheet('monster1', 'images/monster1.png', 42, 33)
-    @load.spritesheet('monster2', 'images/monster2.png', 42, 33)
-    @load.spritesheet('monster3', 'images/monster3.png', 42, 33)
-    @load.spritesheet('monster4', 'images/monster4.png', 42, 33)
-    @load.image('battery', 'images/battery.png')
-    @load.image('dead-battery', 'images/dead-battery.png')
-    @load.image('full-battery', 'images/full-battery.png')
-    @load.spritesheet('apps', 'images/apps.png' ,120, 119)
-    AppAtk.sfx = new AppAtk.Sfx(@)
+    App.sfx = new App.Sfx(@)
+
+
+  update: ->
+    @signature.update()
