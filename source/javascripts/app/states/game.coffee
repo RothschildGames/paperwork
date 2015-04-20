@@ -1,7 +1,7 @@
 class App.Game
 
   DEFAULT_LIVES = 4
-  DEFAULT_CAMERA_SPEED = 3
+  DEFAULT_CAMERA_SPEED = 3.5
   NUMBER_OF_PAGES = 2
   ZERO_PADDING =  8
   HEART = "♥"
@@ -70,8 +70,8 @@ class App.Game
     misses = expected - hits
     @lives -= misses
     @score = Math.max(0, @score + @HIT_MODIFIER * hits)
-    @cameraSpeed = DEFAULT_CAMERA_SPEED + (@pagesSigned / 4)
-    @delay = Math.max(100, MID_DELAY - (@pagesSigned * 10))
+    @cameraSpeed = DEFAULT_CAMERA_SPEED + (@pagesSigned / 6)
+    @delay = Math.max(100, MID_DELAY - (@pagesSigned * 6))
 
     @text.text = @zeroPad(@score)
     @healthText.text = @hearts(@lives)
