@@ -1,5 +1,5 @@
 class App.Views.Signature
-  signatureSpeed: 4
+  signatureSpeed: 5
   images: ['sig1', 'sig2']
   isAnimating: false
   doneAnimating: false

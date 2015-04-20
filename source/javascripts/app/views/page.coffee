@@ -43,6 +43,8 @@ class App.Views.Page
     @text.cacheAsBitmap = true
     @page.addChild(@text)
     if @text.text.length > 0
+      if @text.height > (@page_height - @page_padding) * 1.3
+        @text.text = @text.text.substring(@text.text.length / 2)
       while @text.height > (@page_height - @page_padding)
         @text.text = @text.text.replace(/\s*\S$/,'')
 
