@@ -4,6 +4,8 @@
   App.Loader = (function() {
     function Loader() {
       this.startGame = bind(this.startGame, this);
+      this.onReady = bind(this.onReady, this);
+      this.addSignature = bind(this.addSignature, this);
     }
 
     Loader.prototype.ready = false;
@@ -14,12 +16,12 @@
     };
 
     Loader.prototype._createLoadingUI = function() {
-      var page, text;
+      var text;
       game.stage.backgroundColor = 0xDDDDDD;
-      page = new App.Views.Page(game, 0, 0, {
+      this.page = new App.Views.Page(game, 0, 0, {
         signatures: 0
       });
-      page.text.visible = false;
+      this.page.text.visible = false;
       text = game.add.text(180, 240, 'Paper\nWork');
       text.align = 'center';
       text.wordWrapWidth = 3000;
@@ -34,7 +36,7 @@
       text.fontSize = 33;
       text.fontWeight = 200;
       text.fill = '#333333';
-      text = game.add.text(220, 740, 'Loading...');
+      text = game.add.text(180, 740, 'Loading Documents...');
       text.align = 'center';
       text.font = 'Courier';
       text.fontSize = 33;
@@ -49,30 +51,30 @@
       text.fill = '#333333';
       text.visible = false;
       this.signToStart = text;
-      this.signature = new App.Views.Signature(game, 400, 800, page.color);
-      this.signature.el.visible = false;
-      this.signature.on("signed", (function(_this) {
+      return this.load.onLoadComplete.add(this.onReady);
+    };
+
+    Loader.prototype.addSignature = function() {
+      this.signature = new App.Views.Signature(game, 400, 800, this.page.color);
+      return this.signature.on("signed", (function(_this) {
         return function() {
           var started;
           return started = _this.startGame();
         };
       })(this));
-      page.page.inputEnabled = true;
-      page.page.events.onInputDown.add(this.startGame);
-      return this.load.onLoadComplete.add((function(_this) {
-        return function() {
-          App.sfx.start();
-          _this.loadingText.visible = false;
-          _this.signToStart.visible = true;
-          _this.signature.el.visible = true;
-          return _this.ready = true;
-        };
-      })(this));
+    };
+
+    Loader.prototype.onReady = function() {
+      App.sfx.start();
+      this.loadingText.visible = false;
+      this.signToStart.visible = true;
+      this.addSignature();
+      return this.ready = true;
     };
 
     Loader.prototype.startGame = function() {
       if (this.ready) {
-        return this.state.start('game');
+        return this.state.start('help');
       }
     };
 
@@ -81,7 +83,8 @@
     };
 
     Loader.prototype.update = function() {
-      return this.signature.update();
+      var ref;
+      return (ref = this.signature) != null ? ref.update() : void 0;
     };
 
     return Loader;

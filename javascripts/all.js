@@ -91402,6 +91402,8 @@ _.extend(App, Backbone.Events);
 }).call(this);
 (function() {
   App.Sfx = (function() {
+    Sfx.prototype.playingMusic = false;
+
     Sfx.prototype.music = ['sfx/ScruffHouse.ogg', 'sfx/ScruffHouse.mp3', 'sfx/ScruffHouse.m4a'];
 
     Sfx.prototype.soundsSources = {
@@ -91472,45 +91474,103 @@ _.extend(App, Backbone.Events);
 }).call(this);
 (function() {
   App.Game = (function() {
-    var NUMBER_OF_PAGES, create_page;
+    var DEFAULT_CAMERA_SPEED, DEFAULT_LIVES, HEART, NUMBER_OF_PAGES, ZERO_PADDING;
 
     function Game() {}
 
-    Game.prototype.camera_speed = 3;
+    DEFAULT_LIVES = 4;
 
-    NUMBER_OF_PAGES = 20;
+    DEFAULT_CAMERA_SPEED = 3;
 
-    create_page = function() {
-      var page;
-      page = game.add.graphics(0, 0);
-      page.beginFill(0xFFFFFF, 1);
-      page.drawRect(margin, margin, game.width - (margin * 2), game.height - (margin * 2));
-      return page;
-    };
+    NUMBER_OF_PAGES = 3;
 
-    Game.prototype.preload = function() {};
+    ZERO_PADDING = 8;
+
+    HEART = "♥";
+
+    Game.prototype.HIT_MODIFIER = +150;
 
     Game.prototype.create = function() {
       App.sfx.start();
       ga('send', 'event', 'game', 'start');
-      game.world.setBounds(0, 0, game.width * NUMBER_OF_PAGES, game.height);
+      this._createScoreText();
+      this._createHealthText();
       this.pages = [];
       _.times(NUMBER_OF_PAGES, (function(_this) {
         return function(idx) {
           return _this.pages.push(new App.Views.Page(game, game.width * (idx + 1), 0));
         };
       })(this));
-      return game.stage.backgroundColor = 0xDDDDDD;
+      game.stage.backgroundColor = 0xDDDDDD;
+      this.pagesSigned = 0;
+      this.score = 0;
+      this.lives = DEFAULT_LIVES;
+      return this.cameraSpeed = DEFAULT_CAMERA_SPEED;
     };
 
     Game.prototype.update = function() {
-      var i, len, page, ref;
+      var firstPage, i, len, newPage, page, ref;
       ref = this.pages;
       for (i = 0, len = ref.length; i < len; i++) {
         page = ref[i];
         page.update();
+        page.el.x -= this.cameraSpeed;
       }
-      return game.camera.x += this.camera_speed;
+      firstPage = _.first(this.pages);
+      if (firstPage.el.x < -game.width) {
+        this.scorePage(firstPage);
+        firstPage.destroy();
+        newPage = new App.Views.Page(game, firstPage.el.x + game.width * NUMBER_OF_PAGES, 0);
+        this.pages.shift(1);
+        this.pages.push(newPage);
+      }
+      this.text.text = this.zeroPad(this.score);
+      return this.healthText.text = this.hearts(this.lives);
+    };
+
+    Game.prototype.scorePage = function(page) {
+      var expected, hits, misses;
+      this.pagesSigned += 1;
+      expected = page.expectedSignatures;
+      hits = page.signedSignatures;
+      misses = expected - hits;
+      this.lives -= misses;
+      this.score = Math.max(0, this.score + this.HIT_MODIFIER * hits);
+      this.cameraSpeed = DEFAULT_CAMERA_SPEED + (this.pagesSigned / 4);
+      if (this.lives <= 0) {
+        return this.endGame();
+      }
+    };
+
+    Game.prototype.endGame = function() {
+      return console.log("Game Over");
+    };
+
+    Game.prototype._createScoreText = function() {
+      this.text = game.add.text(10, 10, this.zeroPad(0));
+      this.text.font = 'Courier';
+      this.text.fontSize = 23;
+      this.text.fontWeight = 200;
+      return this.text.fill = '#333333';
+    };
+
+    Game.prototype._createHealthText = function() {
+      this.healthText = game.add.text(game.width - 10, 10, "");
+      this.healthText.anchor.setTo(1, 0);
+      this.healthText.font = 'Courier';
+      this.healthText.fontSize = 23;
+      this.healthText.fontWeight = 200;
+      return this.healthText.fill = '#333333';
+    };
+
+    Game.prototype.zeroPad = function(num) {
+      var zero;
+      zero = ZERO_PADDING - num.toString().length + 1;
+      return Array(+(zero > 0 && zero)).join("0") + num;
+    };
+
+    Game.prototype.hearts = function(count) {
+      return Array(1 + count).join(HEART);
     };
 
     return Game;
@@ -91521,9 +91581,60 @@ _.extend(App, Backbone.Events);
 (function() {
   var bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
 
+  App.Help = (function() {
+    function Help() {
+      this.startGame = bind(this.startGame, this);
+      this.onReady = bind(this.onReady, this);
+      this.addSignature = bind(this.addSignature, this);
+    }
+
+    Help.prototype.didSeeOnce = false;
+
+    Help.prototype.preload = function() {
+      game.stage.backgroundColor = 0xDDDDDD;
+      this.page = new App.Views.Page(game, 0, 0, {
+        signatures: 0
+      });
+      this.page.text.text = "\nGAME AGREEMENT\n\nTHIS GAME AGREEMENT (this “game”) made and entered into and made effective this ____ day of _____________, 2015, by and between Rothschild Games., a game company (hereinafter referred to as “Owner”) and PLAYER, L.L.C., a limited liability company, (hereinafter referred to as “Tenant”).\nWHEREAS, Owner and Tenant desire to enter into a GAME Agreement and memorialize the terms of the lease between Owner and Tenant.\n\nGAME RULES\n\nIn PAPERWORK (this \"game\") your job as decribed by appendix A/13 is to KEEP SIGNING DOCUMENTS as they pass your screen.\n\nThe amount of papers you sign will directly influence your score compensation based on the common formula in section 7 of the Ludum Law\n\n\nSign here to start:\n";
+      return this.addSignature();
+    };
+
+    Help.prototype.addSignature = function() {
+      this.signature = new App.Views.Signature(game, 400, 860, this.page.color);
+      return this.signature.on("signed", (function(_this) {
+        return function() {
+          var started;
+          return started = _this.startGame();
+        };
+      })(this));
+    };
+
+    Help.prototype.onReady = function() {
+      return this.addSignature();
+    };
+
+    Help.prototype.startGame = function() {
+      return this.state.start('game');
+    };
+
+    Help.prototype.update = function() {
+      var ref;
+      return (ref = this.signature) != null ? ref.update() : void 0;
+    };
+
+    return Help;
+
+  })();
+
+}).call(this);
+(function() {
+  var bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
+
   App.Loader = (function() {
     function Loader() {
       this.startGame = bind(this.startGame, this);
+      this.onReady = bind(this.onReady, this);
+      this.addSignature = bind(this.addSignature, this);
     }
 
     Loader.prototype.ready = false;
@@ -91534,12 +91645,12 @@ _.extend(App, Backbone.Events);
     };
 
     Loader.prototype._createLoadingUI = function() {
-      var page, text;
+      var text;
       game.stage.backgroundColor = 0xDDDDDD;
-      page = new App.Views.Page(game, 0, 0, {
+      this.page = new App.Views.Page(game, 0, 0, {
         signatures: 0
       });
-      page.text.visible = false;
+      this.page.text.visible = false;
       text = game.add.text(180, 240, 'Paper\nWork');
       text.align = 'center';
       text.wordWrapWidth = 3000;
@@ -91554,7 +91665,7 @@ _.extend(App, Backbone.Events);
       text.fontSize = 33;
       text.fontWeight = 200;
       text.fill = '#333333';
-      text = game.add.text(220, 740, 'Loading...');
+      text = game.add.text(180, 740, 'Loading Documents...');
       text.align = 'center';
       text.font = 'Courier';
       text.fontSize = 33;
@@ -91569,30 +91680,30 @@ _.extend(App, Backbone.Events);
       text.fill = '#333333';
       text.visible = false;
       this.signToStart = text;
-      this.signature = new App.Views.Signature(game, 400, 800, page.color);
-      this.signature.el.visible = false;
-      this.signature.on("signed", (function(_this) {
+      return this.load.onLoadComplete.add(this.onReady);
+    };
+
+    Loader.prototype.addSignature = function() {
+      this.signature = new App.Views.Signature(game, 400, 800, this.page.color);
+      return this.signature.on("signed", (function(_this) {
         return function() {
           var started;
           return started = _this.startGame();
         };
       })(this));
-      page.page.inputEnabled = true;
-      page.page.events.onInputDown.add(this.startGame);
-      return this.load.onLoadComplete.add((function(_this) {
-        return function() {
-          App.sfx.start();
-          _this.loadingText.visible = false;
-          _this.signToStart.visible = true;
-          _this.signature.el.visible = true;
-          return _this.ready = true;
-        };
-      })(this));
+    };
+
+    Loader.prototype.onReady = function() {
+      App.sfx.start();
+      this.loadingText.visible = false;
+      this.signToStart.visible = true;
+      this.addSignature();
+      return this.ready = true;
     };
 
     Loader.prototype.startGame = function() {
       if (this.ready) {
-        return this.state.start('game');
+        return this.state.start('help');
       }
     };
 
@@ -91601,7 +91712,8 @@ _.extend(App, Backbone.Events);
     };
 
     Loader.prototype.update = function() {
-      return this.signature.update();
+      var ref;
+      return (ref = this.signature) != null ? ref.update() : void 0;
     };
 
     return Loader;
@@ -91793,13 +91905,36 @@ _.extend(App, Backbone.Events);
       };
       this.update = bind(this.update, this);
       this.createSignature = bind(this.createSignature, this);
+      this.destroy = bind(this.destroy, this);
+      this._createText = bind(this._createText, this);
+      this._createPage = bind(this._createPage, this);
+      this._createPage();
+      this._createText();
+      if (this.options.signatures > 0) {
+        this.sigs = [];
+        _.times(game.rnd.between(1, this.signature_count), (function(_this) {
+          return function() {
+            return _this.sigs.push(_this.createSignature());
+          };
+        })(this));
+        this.expectedSignatures = this.sigs.length;
+        this.signedSignatures = 0;
+      }
+      this.el = this.page;
+    }
+
+    Page.prototype._createPage = function() {
       this.page = this.game.add.graphics(this.x, this.y);
+      this.page.anchor = new Phaser.Point(0, 0);
       this.paper_width = this.game.width - (this.page_margin * 2);
       this.page_height = this.paper_width * this.page_height_ratio;
       this.page.beginFill(0, 0.3);
       this.page.drawRect(this.page_margin + 10, this.page_margin + 10, this.paper_width, this.page_height);
       this.page.beginFill(this.color, 1);
-      this.page.drawRect(this.page_margin, this.page_margin, this.paper_width, this.page_height);
+      return this.page.drawRect(this.page_margin, this.page_margin, this.paper_width, this.page_height);
+    };
+
+    Page.prototype._createText = function() {
       this.text = this.game.add.text(this.page_margin + this.page_padding, this.page_margin + this.page_padding, Legal.generate(2));
       this.text.wordWrapWidth = this.paper_width - (this.page_padding * 2);
       this.text.wordWrap = true;
@@ -91808,22 +91943,23 @@ _.extend(App, Backbone.Events);
       this.text.fontWeight = 200;
       this.text.fill = '#333333';
       this.text.cacheAsBitmap = true;
-      this.page.addChild(this.text);
-      if (this.options.signatures > 0) {
-        this.sigs = [];
-        _.times(game.rnd.between(1, this.signature_count), (function(_this) {
-          return function() {
-            return _this.sigs.push(_this.createSignature());
-          };
-        })(this));
-      }
-    }
+      return this.page.addChild(this.text);
+    };
+
+    Page.prototype.destroy = function() {
+      return this.el.destroy(true);
+    };
 
     Page.prototype.createSignature = function() {
       var signature, x, y;
       x = game.rnd.between(this.text.left, this.text.right - App.Views.Signature.signature_width - App.Views.Signature.signature_padding);
       y = game.rnd.between(this.text.top, this.page_height - App.Views.Signature.signature_height - App.Views.Signature.signature_padding);
       signature = new App.Views.Signature(game, x, y, this.color);
+      signature.on("signed", (function(_this) {
+        return function() {
+          return _this.signedSignatures += 1;
+        };
+      })(this));
       this.page.addChild(signature.el);
       return signature;
     };
@@ -91867,16 +92003,30 @@ _.extend(App, Backbone.Events);
     Signature.prototype.signature_line_height = 3;
 
     function Signature(game, x, y, color) {
-      var signatureContainer, xText;
+      var signatureContainer;
       this.game = game;
       this.x = x;
       this.y = y;
       this.color = color;
       this.update = bind(this.update, this);
+      this.show = bind(this.show, this);
+      this.hide = bind(this.hide, this);
       this.didReset = bind(this.didReset, this);
       this.didComplete = bind(this.didComplete, this);
       this.stopAnimating = bind(this.stopAnimating, this);
       this.startAnimating = bind(this.startAnimating, this);
+      this._createSignature = bind(this._createSignature, this);
+      this._createX = bind(this._createX, this);
+      this._createContainer = bind(this._createContainer, this);
+      signatureContainer = this._createContainer();
+      signatureContainer.addChild(this._createX());
+      signatureContainer.addChild(this._createSignature());
+      this.el = signatureContainer;
+      _.extend(this, Backbone.Events);
+    }
+
+    Signature.prototype._createContainer = function() {
+      var signatureContainer;
       signatureContainer = this.game.add.graphics(this.x, this.y);
       signatureContainer.beginFill(this.color, 1);
       signatureContainer.drawRect(0, 0, App.Views.Signature.signature_width + App.Views.Signature.signature_padding * 2, App.Views.Signature.signature_height + App.Views.Signature.signature_padding * 2);
@@ -91893,23 +92043,28 @@ _.extend(App, Backbone.Events);
           return _this.stopAnimating();
         };
       })(this));
-      this.el = signatureContainer;
-      xText = this.game.add.text(App.Views.Signature.signature_padding, App.Views.Signature.signature_padding, "X");
-      xText.font = 'Courier';
-      xText.fontSize = 23;
-      xText.fontWeight = 400;
-      xText.fill = '#333333';
-      signatureContainer.addChild(xText);
+      return signatureContainer;
+    };
+
+    Signature.prototype._createX = function() {
+      this.xText = this.game.add.text(App.Views.Signature.signature_padding, App.Views.Signature.signature_padding, "X");
+      this.xText.font = 'Courier';
+      this.xText.fontSize = 23;
+      this.xText.fontWeight = 400;
+      this.xText.fill = '#333333';
+      return this.xText;
+    };
+
+    Signature.prototype._createSignature = function() {
       this.signature = this.game.add.image(App.Views.Signature.signature_padding, 0, _.sample(this.images));
-      signatureContainer.addChild(this.signature);
       this.originalWidth = this.signature.width;
       this.originalHeight = this.signature.height;
       this.signature.height = App.Views.Signature.signature_width * this.signature.height / this.signature.width;
       this.signature.width = App.Views.Signature.signature_width;
       this.signature.anchor.setTo(0, 0);
       this.signature.crop(new Phaser.Rectangle(0, 0, 0, this.originalHeight));
-      _.extend(this, Backbone.Events);
-    }
+      return this.signature;
+    };
 
     Signature.prototype.startAnimating = function() {
       if (!this.isAnimating) {
@@ -91932,6 +92087,15 @@ _.extend(App, Backbone.Events);
 
     Signature.prototype.didReset = function() {
       return this.doneReset = true;
+    };
+
+    Signature.prototype.hide = function() {
+      this.el.visible = false;
+      return this.xText.visible = false;
+    };
+
+    Signature.prototype.show = function() {
+      return this.el.visible = true;
     };
 
     Signature.prototype.update = function() {
@@ -91965,6 +92129,8 @@ _.extend(App, Backbone.Events);
   game.state.add('boot', new App.Boot());
 
   game.state.add('loader', new App.Loader());
+
+  game.state.add('help', new App.Help());
 
   game.state.add('game', new App.Game());
 

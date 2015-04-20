@@ -21,16 +21,30 @@
     Signature.prototype.signature_line_height = 3;
 
     function Signature(game, x, y, color) {
-      var signatureContainer, xText;
+      var signatureContainer;
       this.game = game;
       this.x = x;
       this.y = y;
       this.color = color;
       this.update = bind(this.update, this);
+      this.show = bind(this.show, this);
+      this.hide = bind(this.hide, this);
       this.didReset = bind(this.didReset, this);
       this.didComplete = bind(this.didComplete, this);
       this.stopAnimating = bind(this.stopAnimating, this);
       this.startAnimating = bind(this.startAnimating, this);
+      this._createSignature = bind(this._createSignature, this);
+      this._createX = bind(this._createX, this);
+      this._createContainer = bind(this._createContainer, this);
+      signatureContainer = this._createContainer();
+      signatureContainer.addChild(this._createX());
+      signatureContainer.addChild(this._createSignature());
+      this.el = signatureContainer;
+      _.extend(this, Backbone.Events);
+    }
+
+    Signature.prototype._createContainer = function() {
+      var signatureContainer;
       signatureContainer = this.game.add.graphics(this.x, this.y);
       signatureContainer.beginFill(this.color, 1);
       signatureContainer.drawRect(0, 0, App.Views.Signature.signature_width + App.Views.Signature.signature_padding * 2, App.Views.Signature.signature_height + App.Views.Signature.signature_padding * 2);
@@ -47,23 +61,28 @@
           return _this.stopAnimating();
         };
       })(this));
-      this.el = signatureContainer;
-      xText = this.game.add.text(App.Views.Signature.signature_padding, App.Views.Signature.signature_padding, "X");
-      xText.font = 'Courier';
-      xText.fontSize = 23;
-      xText.fontWeight = 400;
-      xText.fill = '#333333';
-      signatureContainer.addChild(xText);
+      return signatureContainer;
+    };
+
+    Signature.prototype._createX = function() {
+      this.xText = this.game.add.text(App.Views.Signature.signature_padding, App.Views.Signature.signature_padding, "X");
+      this.xText.font = 'Courier';
+      this.xText.fontSize = 23;
+      this.xText.fontWeight = 400;
+      this.xText.fill = '#333333';
+      return this.xText;
+    };
+
+    Signature.prototype._createSignature = function() {
       this.signature = this.game.add.image(App.Views.Signature.signature_padding, 0, _.sample(this.images));
-      signatureContainer.addChild(this.signature);
       this.originalWidth = this.signature.width;
       this.originalHeight = this.signature.height;
       this.signature.height = App.Views.Signature.signature_width * this.signature.height / this.signature.width;
       this.signature.width = App.Views.Signature.signature_width;
       this.signature.anchor.setTo(0, 0);
       this.signature.crop(new Phaser.Rectangle(0, 0, 0, this.originalHeight));
-      _.extend(this, Backbone.Events);
-    }
+      return this.signature;
+    };
 
     Signature.prototype.startAnimating = function() {
       if (!this.isAnimating) {
@@ -86,6 +105,15 @@
 
     Signature.prototype.didReset = function() {
       return this.doneReset = true;
+    };
+
+    Signature.prototype.hide = function() {
+      this.el.visible = false;
+      return this.xText.visible = false;
+    };
+
+    Signature.prototype.show = function() {
+      return this.el.visible = true;
     };
 
     Signature.prototype.update = function() {

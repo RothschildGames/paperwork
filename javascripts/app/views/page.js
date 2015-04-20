@@ -21,13 +21,36 @@
       };
       this.update = bind(this.update, this);
       this.createSignature = bind(this.createSignature, this);
+      this.destroy = bind(this.destroy, this);
+      this._createText = bind(this._createText, this);
+      this._createPage = bind(this._createPage, this);
+      this._createPage();
+      this._createText();
+      if (this.options.signatures > 0) {
+        this.sigs = [];
+        _.times(game.rnd.between(1, this.signature_count), (function(_this) {
+          return function() {
+            return _this.sigs.push(_this.createSignature());
+          };
+        })(this));
+        this.expectedSignatures = this.sigs.length;
+        this.signedSignatures = 0;
+      }
+      this.el = this.page;
+    }
+
+    Page.prototype._createPage = function() {
       this.page = this.game.add.graphics(this.x, this.y);
+      this.page.anchor = new Phaser.Point(0, 0);
       this.paper_width = this.game.width - (this.page_margin * 2);
       this.page_height = this.paper_width * this.page_height_ratio;
       this.page.beginFill(0, 0.3);
       this.page.drawRect(this.page_margin + 10, this.page_margin + 10, this.paper_width, this.page_height);
       this.page.beginFill(this.color, 1);
-      this.page.drawRect(this.page_margin, this.page_margin, this.paper_width, this.page_height);
+      return this.page.drawRect(this.page_margin, this.page_margin, this.paper_width, this.page_height);
+    };
+
+    Page.prototype._createText = function() {
       this.text = this.game.add.text(this.page_margin + this.page_padding, this.page_margin + this.page_padding, Legal.generate(2));
       this.text.wordWrapWidth = this.paper_width - (this.page_padding * 2);
       this.text.wordWrap = true;
@@ -36,22 +59,23 @@
       this.text.fontWeight = 200;
       this.text.fill = '#333333';
       this.text.cacheAsBitmap = true;
-      this.page.addChild(this.text);
-      if (this.options.signatures > 0) {
-        this.sigs = [];
-        _.times(game.rnd.between(1, this.signature_count), (function(_this) {
-          return function() {
-            return _this.sigs.push(_this.createSignature());
-          };
-        })(this));
-      }
-    }
+      return this.page.addChild(this.text);
+    };
+
+    Page.prototype.destroy = function() {
+      return this.el.destroy(true);
+    };
 
     Page.prototype.createSignature = function() {
       var signature, x, y;
       x = game.rnd.between(this.text.left, this.text.right - App.Views.Signature.signature_width - App.Views.Signature.signature_padding);
       y = game.rnd.between(this.text.top, this.page_height - App.Views.Signature.signature_height - App.Views.Signature.signature_padding);
       signature = new App.Views.Signature(game, x, y, this.color);
+      signature.on("signed", (function(_this) {
+        return function() {
+          return _this.signedSignatures += 1;
+        };
+      })(this));
       this.page.addChild(signature.el);
       return signature;
     };

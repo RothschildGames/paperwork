@@ -1,5 +1,7 @@
 (function() {
   App.Sfx = (function() {
+    Sfx.prototype.playingMusic = false;
+
     Sfx.prototype.music = ['sfx/ScruffHouse.ogg', 'sfx/ScruffHouse.mp3', 'sfx/ScruffHouse.m4a'];
 
     Sfx.prototype.soundsSources = {
