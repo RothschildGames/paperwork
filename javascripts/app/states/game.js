@@ -1,6 +1,6 @@
 (function() {
   App.Game = (function() {
-    var DEFAULT_CAMERA_SPEED, DEFAULT_LIVES, HEART, NUMBER_OF_PAGES, ZERO_PADDING;
+    var DEFAULT_CAMERA_SPEED, DEFAULT_LIVES, HEART, INITIAL_DELAY, MID_DELAY, NUMBER_OF_PAGES, ZERO_PADDING;
 
     function Game() {}
 
@@ -8,30 +8,58 @@
 
     DEFAULT_CAMERA_SPEED = 3;
 
-    NUMBER_OF_PAGES = 3;
+    NUMBER_OF_PAGES = 2;
 
     ZERO_PADDING = 8;
 
     HEART = "♥";
+
+    INITIAL_DELAY = 800;
+
+    MID_DELAY = 300;
 
     Game.prototype.HIT_MODIFIER = +150;
 
     Game.prototype.create = function() {
       App.sfx.start();
       ga('send', 'event', 'game', 'start');
+      game.stage.backgroundColor = 0xDDDDDD;
+      this.pagesSigned = 0;
+      this.score = 0;
+      this.lives = DEFAULT_LIVES;
+      this.cameraSpeed = DEFAULT_CAMERA_SPEED;
+      this.zIndex = NUMBER_OF_PAGES * 1000;
+      this.start = false;
+      this.delay = MID_DELAY;
       this._createScoreText();
       this._createHealthText();
       this.pages = [];
       _.times(NUMBER_OF_PAGES, (function(_this) {
         return function(idx) {
-          return _this.pages.push(new App.Views.Page(game, game.width * (idx + 1), 0));
+          return _this.createPage();
         };
       })(this));
-      game.stage.backgroundColor = 0xDDDDDD;
-      this.pagesSigned = 0;
-      this.score = 0;
-      this.lives = DEFAULT_LIVES;
-      return this.cameraSpeed = DEFAULT_CAMERA_SPEED;
+      return this.delayBy(INITIAL_DELAY);
+    };
+
+    Game.prototype.delayBy = function(byMilis) {
+      var timer;
+      this.start = false;
+      timer = game.time.create(true);
+      timer.add(byMilis, (function(_this) {
+        return function() {
+          return _this.start = true;
+        };
+      })(this));
+      return timer.start();
+    };
+
+    Game.prototype.createPage = function() {
+      var page;
+      page = new App.Views.Page(game, 0, 0);
+      game.world.sendToBack(page.el);
+      this.pages.push(page);
+      return page;
     };
 
     Game.prototype.update = function() {
@@ -40,18 +68,20 @@
       for (i = 0, len = ref.length; i < len; i++) {
         page = ref[i];
         page.update();
-        page.el.x -= this.cameraSpeed;
+      }
+      if (!this.start) {
+        return;
       }
       firstPage = _.first(this.pages);
+      firstPage.el.x -= this.cameraSpeed;
+      window.first = firstPage;
       if (firstPage.el.x < -game.width) {
         this.scorePage(firstPage);
         firstPage.destroy();
-        newPage = new App.Views.Page(game, firstPage.el.x + game.width * NUMBER_OF_PAGES, 0);
+        newPage = this.createPage();
         this.pages.shift(1);
-        this.pages.push(newPage);
+        return this.pages.push(newPage);
       }
-      this.text.text = this.zeroPad(this.score);
-      return this.healthText.text = this.hearts(this.lives);
     };
 
     Game.prototype.scorePage = function(page) {
@@ -63,13 +93,21 @@
       this.lives -= misses;
       this.score = Math.max(0, this.score + this.HIT_MODIFIER * hits);
       this.cameraSpeed = DEFAULT_CAMERA_SPEED + (this.pagesSigned / 4);
+      this.delay = Math.max(100, MID_DELAY - (this.pagesSigned * 10));
+      this.text.text = this.zeroPad(this.score);
+      this.healthText.text = this.hearts(this.lives);
+      if (misses > 0) {
+        new App.Views.PenParticles(game, this.healthText.left, 15);
+      }
       if (this.lives <= 0) {
         return this.endGame();
+      } else {
+        return this.delayBy(this.delay);
       }
     };
 
     Game.prototype.endGame = function() {
-      return console.log("Game Over");
+      return this.state.start('gameOver', true, false, this.score);
     };
 
     Game.prototype._createScoreText = function() {
@@ -86,7 +124,8 @@
       this.healthText.font = 'Courier';
       this.healthText.fontSize = 23;
       this.healthText.fontWeight = 200;
-      return this.healthText.fill = '#333333';
+      this.healthText.fill = '#333333';
+      return this.healthText.text = this.hearts(this.lives);
     };
 
     Game.prototype.zeroPad = function(num) {

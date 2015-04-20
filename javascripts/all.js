@@ -91454,6 +91454,7 @@ _.extend(App, Backbone.Events);
     function Boot() {}
 
     Boot.prototype.init = function() {
+      ga('send', 'event', 'game', 'init');
       this.input.maxPointers = 1;
       return this.scale.scaleMode = Phaser.ScaleManager.EXACT_FIT;
     };
@@ -91474,7 +91475,7 @@ _.extend(App, Backbone.Events);
 }).call(this);
 (function() {
   App.Game = (function() {
-    var DEFAULT_CAMERA_SPEED, DEFAULT_LIVES, HEART, NUMBER_OF_PAGES, ZERO_PADDING;
+    var DEFAULT_CAMERA_SPEED, DEFAULT_LIVES, HEART, INITIAL_DELAY, MID_DELAY, NUMBER_OF_PAGES, ZERO_PADDING;
 
     function Game() {}
 
@@ -91482,30 +91483,58 @@ _.extend(App, Backbone.Events);
 
     DEFAULT_CAMERA_SPEED = 3;
 
-    NUMBER_OF_PAGES = 3;
+    NUMBER_OF_PAGES = 2;
 
     ZERO_PADDING = 8;
 
     HEART = "♥";
+
+    INITIAL_DELAY = 800;
+
+    MID_DELAY = 300;
 
     Game.prototype.HIT_MODIFIER = +150;
 
     Game.prototype.create = function() {
       App.sfx.start();
       ga('send', 'event', 'game', 'start');
+      game.stage.backgroundColor = 0xDDDDDD;
+      this.pagesSigned = 0;
+      this.score = 0;
+      this.lives = DEFAULT_LIVES;
+      this.cameraSpeed = DEFAULT_CAMERA_SPEED;
+      this.zIndex = NUMBER_OF_PAGES * 1000;
+      this.start = false;
+      this.delay = MID_DELAY;
       this._createScoreText();
       this._createHealthText();
       this.pages = [];
       _.times(NUMBER_OF_PAGES, (function(_this) {
         return function(idx) {
-          return _this.pages.push(new App.Views.Page(game, game.width * (idx + 1), 0));
+          return _this.createPage();
         };
       })(this));
-      game.stage.backgroundColor = 0xDDDDDD;
-      this.pagesSigned = 0;
-      this.score = 0;
-      this.lives = DEFAULT_LIVES;
-      return this.cameraSpeed = DEFAULT_CAMERA_SPEED;
+      return this.delayBy(INITIAL_DELAY);
+    };
+
+    Game.prototype.delayBy = function(byMilis) {
+      var timer;
+      this.start = false;
+      timer = game.time.create(true);
+      timer.add(byMilis, (function(_this) {
+        return function() {
+          return _this.start = true;
+        };
+      })(this));
+      return timer.start();
+    };
+
+    Game.prototype.createPage = function() {
+      var page;
+      page = new App.Views.Page(game, 0, 0);
+      game.world.sendToBack(page.el);
+      this.pages.push(page);
+      return page;
     };
 
     Game.prototype.update = function() {
@@ -91514,18 +91543,20 @@ _.extend(App, Backbone.Events);
       for (i = 0, len = ref.length; i < len; i++) {
         page = ref[i];
         page.update();
-        page.el.x -= this.cameraSpeed;
+      }
+      if (!this.start) {
+        return;
       }
       firstPage = _.first(this.pages);
+      firstPage.el.x -= this.cameraSpeed;
+      window.first = firstPage;
       if (firstPage.el.x < -game.width) {
         this.scorePage(firstPage);
         firstPage.destroy();
-        newPage = new App.Views.Page(game, firstPage.el.x + game.width * NUMBER_OF_PAGES, 0);
+        newPage = this.createPage();
         this.pages.shift(1);
-        this.pages.push(newPage);
+        return this.pages.push(newPage);
       }
-      this.text.text = this.zeroPad(this.score);
-      return this.healthText.text = this.hearts(this.lives);
     };
 
     Game.prototype.scorePage = function(page) {
@@ -91537,13 +91568,21 @@ _.extend(App, Backbone.Events);
       this.lives -= misses;
       this.score = Math.max(0, this.score + this.HIT_MODIFIER * hits);
       this.cameraSpeed = DEFAULT_CAMERA_SPEED + (this.pagesSigned / 4);
+      this.delay = Math.max(100, MID_DELAY - (this.pagesSigned * 10));
+      this.text.text = this.zeroPad(this.score);
+      this.healthText.text = this.hearts(this.lives);
+      if (misses > 0) {
+        new App.Views.PenParticles(game, this.healthText.left, 15);
+      }
       if (this.lives <= 0) {
         return this.endGame();
+      } else {
+        return this.delayBy(this.delay);
       }
     };
 
     Game.prototype.endGame = function() {
-      return console.log("Game Over");
+      return this.state.start('gameOver', true, false, this.score);
     };
 
     Game.prototype._createScoreText = function() {
@@ -91560,7 +91599,8 @@ _.extend(App, Backbone.Events);
       this.healthText.font = 'Courier';
       this.healthText.fontSize = 23;
       this.healthText.fontWeight = 200;
-      return this.healthText.fill = '#333333';
+      this.healthText.fill = '#333333';
+      return this.healthText.text = this.hearts(this.lives);
     };
 
     Game.prototype.zeroPad = function(num) {
@@ -91574,6 +91614,53 @@ _.extend(App, Backbone.Events);
     };
 
     return Game;
+
+  })();
+
+}).call(this);
+(function() {
+  var bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
+
+  App.GameOver = (function() {
+    function GameOver() {
+      this.startGame = bind(this.startGame, this);
+      this.addSignature = bind(this.addSignature, this);
+    }
+
+    GameOver.prototype.init = function(score) {
+      this.score = score;
+      return ga('send', 'event', 'game', 'over', this.score);
+    };
+
+    GameOver.prototype.preload = function() {
+      game.stage.backgroundColor = 0xDDDDDD;
+      this.page = new App.Views.Page(game, 0, 0, {
+        signatures: 0
+      });
+      this.page.text.text = "\nGAME OVER\n\nTHIS GAME AGREEMENT (this “game”) has come to and end.\n\nYou scored: " + this.score + "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nSign here to try again:\n";
+      return this.addSignature();
+    };
+
+    GameOver.prototype.addSignature = function() {
+      this.signature = new App.Views.Signature(game, 400, 860, this.page.color);
+      return this.signature.on("signed", (function(_this) {
+        return function() {
+          var started;
+          return started = _this.startGame();
+        };
+      })(this));
+    };
+
+    GameOver.prototype.startGame = function() {
+      return this.state.start('game');
+    };
+
+    GameOver.prototype.update = function() {
+      var ref;
+      return (ref = this.signature) != null ? ref.update() : void 0;
+    };
+
+    return GameOver;
 
   })();
 
@@ -91694,6 +91781,7 @@ _.extend(App, Backbone.Events);
     };
 
     Loader.prototype.onReady = function() {
+      ga('send', 'event', 'game', 'loaded');
       App.sfx.start();
       this.loadingText.visible = false;
       this.signToStart.visible = true;
@@ -91708,6 +91796,7 @@ _.extend(App, Backbone.Events);
     };
 
     Loader.prototype._loadGameAssets = function() {
+      App.Views.PenParticles.load(game);
       return App.sfx = new App.Sfx(this);
     };
 
@@ -91839,50 +91928,6 @@ _.extend(App, Backbone.Events);
 
 }).call(this);
 (function() {
-  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
-    hasProp = {}.hasOwnProperty;
-
-  App.Views.MonsterParticles = (function(superClass) {
-    extend(MonsterParticles, superClass);
-
-    function MonsterParticles(game, x, y, color, quantity, lifespan) {
-      if (quantity == null) {
-        quantity = 25;
-      }
-      if (lifespan == null) {
-        lifespan = 1000;
-      }
-      MonsterParticles.__super__.constructor.call(this, game, x, y, quantity);
-      this.makeParticles('death-particle');
-      this.lifespan = lifespan;
-      this.forEach((function(_this) {
-        return function(particle) {
-          return particle.tint = color;
-        };
-      })(this));
-      this.gravity = 1;
-      this.explode(this.lifespan, quantity);
-      this.counter = 0;
-    }
-
-    MonsterParticles.prototype.update = function() {
-      this.counter += 1;
-      this.forEachAlive((function(_this) {
-        return function(particle) {
-          return particle.alpha = particle.lifespan / _this.lifespan;
-        };
-      })(this));
-      if (this.counter > 100) {
-        return this.kill();
-      }
-    };
-
-    return MonsterParticles;
-
-  })(Phaser.Particles.Arcade.Emitter);
-
-}).call(this);
-(function() {
   var bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
 
   App.Views.Page = (function() {
@@ -91935,6 +91980,7 @@ _.extend(App, Backbone.Events);
     };
 
     Page.prototype._createText = function() {
+      var results;
       this.text = this.game.add.text(this.page_margin + this.page_padding, this.page_margin + this.page_padding, Legal.generate(2));
       this.text.wordWrapWidth = this.paper_width - (this.page_padding * 2);
       this.text.wordWrap = true;
@@ -91943,7 +91989,14 @@ _.extend(App, Backbone.Events);
       this.text.fontWeight = 200;
       this.text.fill = '#333333';
       this.text.cacheAsBitmap = true;
-      return this.page.addChild(this.text);
+      this.page.addChild(this.text);
+      if (this.text.text.length > 0) {
+        results = [];
+        while (this.text.height > (this.page_height - this.page_padding)) {
+          results.push(this.text.text = this.text.text.replace(/\s*\S$/, ''));
+        }
+        return results;
+      }
     };
 
     Page.prototype.destroy = function() {
@@ -91978,6 +92031,57 @@ _.extend(App, Backbone.Events);
     return Page;
 
   })();
+
+}).call(this);
+(function() {
+  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+    hasProp = {}.hasOwnProperty;
+
+  App.Views.PenParticles = (function(superClass) {
+    extend(PenParticles, superClass);
+
+    PenParticles.load = function(game) {
+      var bmd, radgrad;
+      bmd = game.add.bitmapData(24, 24);
+      bmd.ctx.create;
+      radgrad = bmd.ctx.createRadialGradient(12, 12, 4, 12, 12, 12);
+      radgrad.addColorStop(0, 'rgba(0, 0, 0, 1)');
+      radgrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+      bmd.context.fillStyle = radgrad;
+      bmd.context.fillRect(0, 0, 24, 24);
+      return game.cache.addBitmapData('particle', bmd);
+    };
+
+    function PenParticles(game, x, y, quantity, lifespan) {
+      if (quantity == null) {
+        quantity = 20;
+      }
+      if (lifespan == null) {
+        lifespan = 600;
+      }
+      PenParticles.__super__.constructor.call(this, game, x, y, quantity);
+      this.makeParticles(game.cache.getBitmapData('particle'));
+      this.lifespan = lifespan;
+      this.gravity = 0;
+      this.explode(this.lifespan, quantity);
+      this.counter = 0;
+    }
+
+    PenParticles.prototype.update = function() {
+      this.counter += 1;
+      this.forEachAlive((function(_this) {
+        return function(particle) {
+          return particle.alpha = particle.lifespan / _this.lifespan;
+        };
+      })(this));
+      if (this.counter > 100) {
+        return this.kill();
+      }
+    };
+
+    return PenParticles;
+
+  })(Phaser.Particles.Arcade.Emitter);
 
 }).call(this);
 (function() {
@@ -92109,7 +92213,9 @@ _.extend(App, Backbone.Events);
       } else if (!this.doneAnimating && !this.doneReset) {
         if (this.signature.cropRect.width > 0) {
           this.signature.cropRect.width -= this.signatureSpeed;
-          return this.signature.updateCrop();
+          if (this.signature.alive) {
+            return this.signature.updateCrop();
+          }
         } else {
           return this.didReset();
         }
@@ -92133,6 +92239,8 @@ _.extend(App, Backbone.Events);
   game.state.add('help', new App.Help());
 
   game.state.add('game', new App.Game());
+
+  game.state.add('gameOver', new App.GameOver());
 
   game.state.start('boot');
 

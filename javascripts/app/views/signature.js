@@ -127,7 +127,9 @@
       } else if (!this.doneAnimating && !this.doneReset) {
         if (this.signature.cropRect.width > 0) {
           this.signature.cropRect.width -= this.signatureSpeed;
-          return this.signature.updateCrop();
+          if (this.signature.alive) {
+            return this.signature.updateCrop();
+          }
         } else {
           return this.didReset();
         }

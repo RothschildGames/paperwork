@@ -65,6 +65,7 @@
     };
 
     Loader.prototype.onReady = function() {
+      ga('send', 'event', 'game', 'loaded');
       App.sfx.start();
       this.loadingText.visible = false;
       this.signToStart.visible = true;
@@ -79,6 +80,7 @@
     };
 
     Loader.prototype._loadGameAssets = function() {
+      App.Views.PenParticles.load(game);
       return App.sfx = new App.Sfx(this);
     };
 

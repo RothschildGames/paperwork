@@ -51,6 +51,7 @@
     };
 
     Page.prototype._createText = function() {
+      var results;
       this.text = this.game.add.text(this.page_margin + this.page_padding, this.page_margin + this.page_padding, Legal.generate(2));
       this.text.wordWrapWidth = this.paper_width - (this.page_padding * 2);
       this.text.wordWrap = true;
@@ -59,7 +60,14 @@
       this.text.fontWeight = 200;
       this.text.fill = '#333333';
       this.text.cacheAsBitmap = true;
-      return this.page.addChild(this.text);
+      this.page.addChild(this.text);
+      if (this.text.text.length > 0) {
+        results = [];
+        while (this.text.height > (this.page_height - this.page_padding)) {
+          results.push(this.text.text = this.text.text.replace(/\s*\S$/, ''));
+        }
+        return results;
+      }
     };
 
     Page.prototype.destroy = function() {

@@ -3,6 +3,7 @@
     function Boot() {}
 
     Boot.prototype.init = function() {
+      ga('send', 'event', 'game', 'init');
       this.input.maxPointers = 1;
       return this.scale.scaleMode = Phaser.ScaleManager.EXACT_FIT;
     };
