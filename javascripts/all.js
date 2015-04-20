@@ -91481,7 +91481,7 @@ _.extend(App, Backbone.Events);
 
     DEFAULT_LIVES = 4;
 
-    DEFAULT_CAMERA_SPEED = 3;
+    DEFAULT_CAMERA_SPEED = 3.5;
 
     NUMBER_OF_PAGES = 2;
 
@@ -91567,8 +91567,8 @@ _.extend(App, Backbone.Events);
       misses = expected - hits;
       this.lives -= misses;
       this.score = Math.max(0, this.score + this.HIT_MODIFIER * hits);
-      this.cameraSpeed = DEFAULT_CAMERA_SPEED + (this.pagesSigned / 4);
-      this.delay = Math.max(100, MID_DELAY - (this.pagesSigned * 10));
+      this.cameraSpeed = DEFAULT_CAMERA_SPEED + (this.pagesSigned / 6);
+      this.delay = Math.max(100, MID_DELAY - (this.pagesSigned * 6));
       this.text.text = this.zeroPad(this.score);
       this.healthText.text = this.hearts(this.lives);
       if (misses > 0) {
