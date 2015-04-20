@@ -2,7 +2,7 @@
   var bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
 
   App.Views.Signature = (function() {
-    Signature.prototype.signatureSpeed = 4;
+    Signature.prototype.signatureSpeed = 5;
 
     Signature.prototype.images = ['sig1', 'sig2'];
 

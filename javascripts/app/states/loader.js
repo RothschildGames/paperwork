@@ -51,6 +51,13 @@
       text.fill = '#333333';
       text.visible = false;
       this.signToStart = text;
+      text = game.add.text(315, 900, '[tap and hold to sign]');
+      text.font = 'Courier';
+      text.fontSize = 24;
+      text.fontWeight = 200;
+      text.fill = '#333333';
+      text.visible = false;
+      this.tapToSign = text;
       return this.load.onLoadComplete.add(this.onReady);
     };
 
@@ -69,6 +76,7 @@
       App.sfx.start();
       this.loadingText.visible = false;
       this.signToStart.visible = true;
+      this.tapToSign.visible = true;
       this.addSignature();
       return this.ready = true;
     };

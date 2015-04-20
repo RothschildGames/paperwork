@@ -91767,6 +91767,13 @@ _.extend(App, Backbone.Events);
       text.fill = '#333333';
       text.visible = false;
       this.signToStart = text;
+      text = game.add.text(315, 900, '[tap and hold to sign]');
+      text.font = 'Courier';
+      text.fontSize = 24;
+      text.fontWeight = 200;
+      text.fill = '#333333';
+      text.visible = false;
+      this.tapToSign = text;
       return this.load.onLoadComplete.add(this.onReady);
     };
 
@@ -91785,6 +91792,7 @@ _.extend(App, Backbone.Events);
       App.sfx.start();
       this.loadingText.visible = false;
       this.signToStart.visible = true;
+      this.tapToSign.visible = true;
       this.addSignature();
       return this.ready = true;
     };
@@ -91991,6 +91999,9 @@ _.extend(App, Backbone.Events);
       this.text.cacheAsBitmap = true;
       this.page.addChild(this.text);
       if (this.text.text.length > 0) {
+        if (this.text.height > (this.page_height - this.page_padding) * 1.3) {
+          this.text.text = this.text.text.substring(this.text.text.length / 2);
+        }
         results = [];
         while (this.text.height > (this.page_height - this.page_padding)) {
           results.push(this.text.text = this.text.text.replace(/\s*\S$/, ''));
@@ -92088,7 +92099,7 @@ _.extend(App, Backbone.Events);
   var bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
 
   App.Views.Signature = (function() {
-    Signature.prototype.signatureSpeed = 4;
+    Signature.prototype.signatureSpeed = 5;
 
     Signature.prototype.images = ['sig1', 'sig2'];
 

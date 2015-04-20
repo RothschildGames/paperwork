@@ -62,6 +62,9 @@
       this.text.cacheAsBitmap = true;
       this.page.addChild(this.text);
       if (this.text.text.length > 0) {
+        if (this.text.height > (this.page_height - this.page_padding) * 1.3) {
+          this.text.text = this.text.text.substring(this.text.text.length / 2);
+        }
         results = [];
         while (this.text.height > (this.page_height - this.page_padding)) {
           results.push(this.text.text = this.text.text.replace(/\s*\S$/, ''));
