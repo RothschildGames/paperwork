@@ -1,5 +1,6 @@
 class App.Sfx
 
+  playingMusic: false
   music: ['sfx/ScruffHouse.ogg', 'sfx/ScruffHouse.mp3', 'sfx/ScruffHouse.m4a']
 
   soundsSources:

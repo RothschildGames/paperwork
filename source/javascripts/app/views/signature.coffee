@@ -11,14 +11,23 @@ class App.Views.Signature
   signature_line_height: 3
 
   constructor: (@game, @x, @y, @color) ->
+
+    signatureContainer = @_createContainer()
+    signatureContainer.addChild @_createX()
+    signatureContainer.addChild @_createSignature()
+    @el = signatureContainer
+
+    _.extend(@, Backbone.Events);
+
+  _createContainer: =>
     signatureContainer = @game.add.graphics(@x, @y)
     signatureContainer.beginFill(@color, 1);
     signatureContainer.drawRect(0, 0, App.Views.Signature.signature_width + App.Views.Signature.signature_padding * 2, App.Views.Signature.signature_height + App.Views.Signature.signature_padding * 2)
 
     signatureContainer.beginFill(0x333333, 1);
     signatureContainer.drawRect(App.Views.Signature.signature_padding, App.Views.Signature.signature_padding + App.Views.Signature.signature_height - 5, App.Views.Signature.signature_width, @signature_line_height)
-#    signatureContainer.hitArea = new Phaser.Rectangle(- App.Views.Signature.signature_padding, - App.Views.Signature.signature_padding,
-#        signatureContainer.width + App.Views.Signature.signature_padding * 2, signatureContainer.height + App.Views.Signature.signature_padding * 2)
+    #    signatureContainer.hitArea = new Phaser.Rectangle(- App.Views.Signature.signature_padding, - App.Views.Signature.signature_padding,
+    #        signatureContainer.width + App.Views.Signature.signature_padding * 2, signatureContainer.height + App.Views.Signature.signature_padding * 2)
 
     signatureContainer.inputEnabled = true
     signatureContainer.events.onInputDown.add =>
@@ -26,20 +35,18 @@ class App.Views.Signature
     signatureContainer.events.onInputUp.add =>
       @stopAnimating()
 
-    @el = signatureContainer
+    signatureContainer
 
-#    @page.addChild(signature.el)
+  _createX: =>
+    @xText = @game.add.text(App.Views.Signature.signature_padding, App.Views.Signature.signature_padding, "X")
+    @xText.font = 'Courier'
+    @xText.fontSize = 23
+    @xText.fontWeight = 400
+    @xText.fill = '#333333'
+    @xText
 
-    xText = @game.add.text(App.Views.Signature.signature_padding, App.Views.Signature.signature_padding, "X")
-    xText.font = 'Courier'
-    xText.fontSize = 23
-    xText.fontWeight = 400
-    xText.fill = '#333333'
-    signatureContainer.addChild(xText)
-
+  _createSignature: =>
     @signature = @game.add.image(App.Views.Signature.signature_padding, 0, _.sample(@images));
-
-    signatureContainer.addChild(@signature)
 
     @originalWidth = @signature.width
     @originalHeight = @signature.height
@@ -48,8 +55,8 @@ class App.Views.Signature
 
     @signature.anchor.setTo(0, 0)
     @signature.crop(new Phaser.Rectangle(0, 0, 0, @originalHeight))
+    @signature
 
-    _.extend(@, Backbone.Events);
 
   startAnimating: =>
     unless @isAnimating
@@ -68,6 +75,13 @@ class App.Views.Signature
 
   didReset: =>
     @doneReset = true
+
+  hide: =>
+    @el.visible = false
+    @xText.visible = false
+
+  show: =>
+    @el.visible = true
 
   update: =>
 

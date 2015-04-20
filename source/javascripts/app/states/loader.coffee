@@ -1,4 +1,5 @@
 class App.Loader
+
   ready: false
 
   preload: ->
@@ -7,9 +8,8 @@ class App.Loader
 
   _createLoadingUI: ->
     game.stage.backgroundColor = 0xDDDDDD
-    page = new App.Views.Page(game, 0, 0, {signatures: 0})
-    page.text.visible = false
-
+    @page = new App.Views.Page(game, 0, 0, {signatures: 0})
+    @page.text.visible = false
 
     text = game.add.text(180, 240, 'Paper\nWork')
     text.align = 'center'
@@ -27,8 +27,7 @@ class App.Loader
     text.fontWeight = 200
     text.fill = '#333333'
 
-
-    text = game.add.text(220, 740, 'Loading...')
+    text = game.add.text(180, 740, 'Loading Documents...')
     text.align = 'center'
     text.font = 'Courier'
     text.fontSize = 33
@@ -45,27 +44,26 @@ class App.Loader
     text.visible = false
     @signToStart = text
 
-    @signature = new App.Views.Signature(game, 400, 800, page.color)
-    @signature.el.visible = false
+    @load.onLoadComplete.add @onReady
+
+  addSignature: =>
+    @signature = new App.Views.Signature(game, 400, 800, @page.color)
     @signature.on "signed", =>
       started = @startGame()
 
-    page.page.inputEnabled = true
-    page.page.events.onInputDown.add @startGame
-
-    @load.onLoadComplete.add =>
-      App.sfx.start()
-      @loadingText.visible = false
-      @signToStart.visible = true
-      @signature.el.visible = true
-      @ready = true
+  onReady: =>
+    App.sfx.start()
+    @loadingText.visible = false
+    @signToStart.visible = true
+    @addSignature()
+    @ready = true
 
   startGame: =>
-    @state.start('game') if @ready
+    @state.start('help') if @ready
 
   _loadGameAssets: ->
     App.sfx = new App.Sfx(@)
 
 
   update: ->
-    @signature.update()
+    @signature?.update()
