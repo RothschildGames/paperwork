@@ -95,7 +95,7 @@ class App.Views.Signature
     else if !@doneAnimating && !@doneReset
       if @signature.cropRect.width > 0
         @signature.cropRect.width -= @signatureSpeed
-        @signature.updateCrop()
+        @signature.updateCrop() if @signature.alive
       else
         @didReset()
 

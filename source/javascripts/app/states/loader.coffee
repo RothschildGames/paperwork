@@ -52,6 +52,7 @@ class App.Loader
       started = @startGame()
 
   onReady: =>
+    ga('send', 'event', 'game', 'loaded');
     App.sfx.start()
     @loadingText.visible = false
     @signToStart.visible = true
@@ -62,7 +63,9 @@ class App.Loader
     @state.start('help') if @ready
 
   _loadGameAssets: ->
+    App.Views.PenParticles.load(game)
     App.sfx = new App.Sfx(@)
+
 
 
   update: ->

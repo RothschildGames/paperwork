@@ -9,17 +9,11 @@ class App.Game
   MID_DELAY = 300
 
 
-
   HIT_MODIFIER: +150
 
   create: ->
     App.sfx.start()
     ga('send', 'event', 'game', 'start');
-
-    @_createScoreText()
-    @_createHealthText()
-
-#      @pages.push new App.Views.Page(game, game.width * (idx+1), 0)
 
     game.stage.backgroundColor = 0xDDDDDD
     @pagesSigned = 0
@@ -29,6 +23,9 @@ class App.Game
     @zIndex = NUMBER_OF_PAGES * 1000
     @start = false
     @delay = MID_DELAY
+
+    @_createScoreText()
+    @_createHealthText()
 
     @pages = []
     _.times NUMBER_OF_PAGES, (idx) =>
@@ -57,15 +54,13 @@ class App.Game
 
     firstPage = _.first(@pages)
     firstPage.el.x -= @cameraSpeed
-    if firstPage.el.x < -game.width * 1.2
+    window.first = firstPage
+    if firstPage.el.x < -game.width
       @scorePage(firstPage)
       firstPage.destroy()
       newPage = @createPage()
       @pages.shift(1)
       @pages.push(newPage)
-
-    @text.text = @zeroPad(@score)
-    @healthText.text = @hearts(@lives)
 
 
   scorePage: (page) ->
@@ -77,13 +72,19 @@ class App.Game
     @score = Math.max(0, @score + @HIT_MODIFIER * hits)
     @cameraSpeed = DEFAULT_CAMERA_SPEED + (@pagesSigned / 4)
     @delay = Math.max(100, MID_DELAY - (@pagesSigned * 10))
+
+    @text.text = @zeroPad(@score)
+    @healthText.text = @hearts(@lives)
+    if misses > 0
+      new App.Views.PenParticles(game, @healthText.left, 15)
+
     if @lives <= 0
       @endGame()
     else
       @delayBy(@delay)
 
   endGame: ->
-    console.log("Game Over")
+    @state.start('gameOver', true, false, @score)
 
   _createScoreText: ->
     @text = game.add.text(10, 10, @zeroPad(0))
@@ -100,6 +101,7 @@ class App.Game
     @healthText.fontSize = 23
     @healthText.fontWeight = 200
     @healthText.fill = '#333333'
+    @healthText.text = @hearts(@lives)
 
   zeroPad: (num) ->
     zero = ZERO_PADDING - num.toString().length + 1

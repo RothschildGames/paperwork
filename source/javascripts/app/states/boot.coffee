@@ -1,5 +1,6 @@
 class App.Boot
   init: ->
+    ga('send', 'event', 'game', 'init');
     @input.maxPointers = 1;
     @scale.scaleMode = Phaser.ScaleManager.EXACT_FIT
 

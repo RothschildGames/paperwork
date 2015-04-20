@@ -42,6 +42,9 @@ class App.Views.Page
     @text.fill = '#333333'
     @text.cacheAsBitmap = true
     @page.addChild(@text)
+    if @text.text.length > 0
+      while @text.height > (@page_height - @page_padding)
+        @text.text = @text.text.replace(/\s*\S$/,'')
 
   destroy: =>
     @el.destroy(true)

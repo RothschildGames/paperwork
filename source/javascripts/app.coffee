@@ -4,6 +4,7 @@ game.state.add('boot', new App.Boot())
 game.state.add('loader', new App.Loader())
 game.state.add('help', new App.Help())
 game.state.add('game', new App.Game())
+game.state.add('gameOver', new App.GameOver())
 
 game.state.start('boot')
 
