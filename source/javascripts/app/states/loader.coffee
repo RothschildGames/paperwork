@@ -44,6 +44,14 @@ class App.Loader
     text.visible = false
     @signToStart = text
 
+    text = game.add.text(315, 900, '[tap and hold to sign]')
+    text.font = 'Courier'
+    text.fontSize = 24
+    text.fontWeight = 200
+    text.fill = '#333333'
+    text.visible = false
+    @tapToSign = text
+
     @load.onLoadComplete.add @onReady
 
   addSignature: =>
@@ -56,6 +64,7 @@ class App.Loader
     App.sfx.start()
     @loadingText.visible = false
     @signToStart.visible = true
+    @tapToSign.visible = true
     @addSignature()
     @ready = true
 
