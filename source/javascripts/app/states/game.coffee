@@ -2,9 +2,13 @@ class App.Game
 
   DEFAULT_LIVES = 4
   DEFAULT_CAMERA_SPEED = 3
-  NUMBER_OF_PAGES = 3
+  NUMBER_OF_PAGES = 2
   ZERO_PADDING =  8
   HEART = "♥"
+  INITIAL_DELAY = 800
+  MID_DELAY = 300
+
+
 
   HIT_MODIFIER: +150
 
@@ -15,26 +19,48 @@ class App.Game
     @_createScoreText()
     @_createHealthText()
 
-    @pages = []
-    _.times NUMBER_OF_PAGES, (idx) =>
-      @pages.push new App.Views.Page(game, game.width * (idx+1), 0)
+#      @pages.push new App.Views.Page(game, game.width * (idx+1), 0)
 
     game.stage.backgroundColor = 0xDDDDDD
     @pagesSigned = 0
     @score = 0
     @lives = DEFAULT_LIVES
     @cameraSpeed = DEFAULT_CAMERA_SPEED
+    @zIndex = NUMBER_OF_PAGES * 1000
+    @start = false
+    @delay = MID_DELAY
+
+    @pages = []
+    _.times NUMBER_OF_PAGES, (idx) =>
+      @createPage()
+
+    @delayBy(INITIAL_DELAY)
+
+  delayBy: (byMilis) ->
+    @start = false
+    timer = game.time.create(true)
+    timer.add(byMilis, =>
+      @start = true
+    )
+    timer.start()
+
+  createPage: ->
+    page = new App.Views.Page(game, 0, 0)
+    game.world.sendToBack(page.el)
+    @pages.push page
+    page
 
   update: ->
     for page in @pages
       page.update()
-      page.el.x -= @cameraSpeed
+    return unless @start
 
     firstPage = _.first(@pages)
-    if firstPage.el.x < -game.width
+    firstPage.el.x -= @cameraSpeed
+    if firstPage.el.x < -game.width * 1.2
       @scorePage(firstPage)
       firstPage.destroy()
-      newPage = new App.Views.Page(game,  firstPage.el.x + game.width * NUMBER_OF_PAGES, 0)
+      newPage = @createPage()
       @pages.shift(1)
       @pages.push(newPage)
 
@@ -50,8 +76,11 @@ class App.Game
     @lives -= misses
     @score = Math.max(0, @score + @HIT_MODIFIER * hits)
     @cameraSpeed = DEFAULT_CAMERA_SPEED + (@pagesSigned / 4)
+    @delay = Math.max(100, MID_DELAY - (@pagesSigned * 10))
     if @lives <= 0
       @endGame()
+    else
+      @delayBy(@delay)
 
   endGame: ->
     console.log("Game Over")
