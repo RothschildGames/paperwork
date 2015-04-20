@@ -1,6 +1,8 @@
 # Paper Work
 
-![](https://raw.githubusercontent.com/RothschildGames/paperwork/master/screenshots/screenshot.png)
+![](images/allscreens.png)
+
+Paper work is a fun bureaucracy simulator
 
 Created by @yonbergman for LD32
 
